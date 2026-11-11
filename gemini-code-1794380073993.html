@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣行程與代辦事項 - 2026/11</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, '微軟正黑體', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: #f4f7f6;
+        }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 {
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            border-left: 5px solid #3498db;
+            padding-left: 10px;
+            margin-top: 30px;
+        }
+        
+        /* 行程折疊區塊樣式 */
+        details {
+            background: #fff;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        summary {
+            padding: 15px 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            background: #3498db;
+            color: white;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        summary::-webkit-details-marker { display: none; }
+        .summary-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .summary-title::before {
+            content: '+';
+            font-size: 1.5em;
+            line-height: 1;
+            display: inline-block;
+            width: 20px;
+        }
+        details[open] .summary-title::before { content: '-'; }
+        
+        .day-content {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            min-height: 50px;
+            transition: all 0.2s ease;
+        }
+        .day-content ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .empty-day { color: #888; font-style: italic; }
+        
+        /* 共用按鈕與表單樣式 */
+        .crud-section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .input-group input {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .btn-add { background: #2ecc71; color: white; }
+        .btn-add:hover { background: #27ae60; }
+        .btn-edit { background: #f39c12; color: white; padding: 5px 10px; margin-right: 5px;}
+        .btn-edit:hover { background: #d68910; }
+        .btn-save { background: #2ecc71; color: white; padding: 5px 10px; margin-right: 5px; font-weight: bold;}
+        .btn-save:hover { background: #27ae60; }
+        .btn-delete { background: #e74c3c; color: white; padding: 5px 10px; }
+        .btn-delete:hover { background: #c0392b; }
+        
+        /* 直接編輯模式的發亮狀態 */
+        .editable-active {
+            border: 2px dashed #e67e22 !important;
+            background-color: #fffde7 !important;
+            outline: none;
+        }
+
+        ul.dynamic-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        ul.dynamic-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        ul.dynamic-list li:last-child { border-bottom: none; }
+        
+        /* Checkbox 與文字樣式 */
+        .item-left {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            flex-grow: 1;
+            margin-right: 15px;
+        }
+        .item-checkbox {
+            width: 18px;
+            height: 18px;
+            margin-top: 3px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .item-text {
+            word-break: break-word;
+            transition: color 0.2s;
+        }
+        .checked-text {
+            text-decoration: line-through;
+            color: #999;
+        }
+        .action-btns {
+            display: flex;
+            flex-shrink: 0;
+        }
+        
+        @media (max-width: 600px) {
+            .input-group { flex-direction: column; }
+            .btn-add { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>✈️ 台灣行程總覽</h1>
+
+    <h2>📅 每日行程</h2>
+    <div id="itinerary-container">
+        <!-- 動態生成的行程會放在這裡 -->
+    </div>
+
+    <br>
+    
+    <h2>📋 動態管理清單</h2>
+    
+    <div class="crud-section">
+        <h3>✅ 代辦事項 (DO)</h3>
+        <div class="input-group">
+            <input type="text" id="todo-input" placeholder="輸入新代辦事項...">
+            <button class="btn-add" onclick="addItem('todo')">新增</button>
+        </div>
+        <ul id="todo-list" class="dynamic-list"></ul>
+    </div>
+
+    <div class="crud-section">
+        <h3>🛒 必買清單</h3>
+        <div class="input-group">
+            <input type="text" id="buy-input" placeholder="輸入新必買物品...">
+            <button class="btn-add" onclick="addItem('buy')">新增</button>
+        </div>
+        <ul id="buy-list" class="dynamic-list"></ul>
+    </div>
+
+    <div class="crud-section">
+        <h3>📍 備選景點與美食清單</h3>
+        <div class="input-group">
+            <input type="text" id="spots-input" placeholder="輸入備選景點或美食...">
+            <button class="btn-add" onclick="addItem('spots')">新增</button>
+        </div>
+        <ul id="spots-list" class="dynamic-list"></ul>
+    </div>
+
+    <div class="crud-section" style="background: #eef2f5;">
+        <h3>🔗 常用連結備忘錄</h3>
+        <ul>
+            <li>2026 臺灣米其林必比登推介指南：<a href="https://frank20049-gif.github.io/bib-gourmand-2026/" target="_blank">點此查看</a></li>
+            <li>Pokemon Run 2026：<a href="https://pokemongo.com/zh_Hant/news/pokemon-run-30-2026" target="_blank">活動網站</a></li>
+        </ul>
+    </div>
+
+    <script>
+        // --- 預設資料 ---
+        const defaultData = {
+            'itinerary': [
+                { date: '11/12 (四)', content: '<ul><li><strong>12:15</strong> 福岡出發 ➔ <strong>13:50</strong> 抵達台北(桃園)</li><li>打電話約：蒔美牙醫 (02-2855-9465)、禾峰診所 (02-8285-5090)</li><li>買 TPASS</li><li>湧蓮寺拜拜</li><li>皮醫師-蘆洲分院 411號 晚診18:30~21:30(最後報到21:00) <a href="https://www.drpi.com.tw/Registration/" target="_blank">預約連結</a></li></ul>' },
+                { date: '11/13 (五)', content: '<ul><li>桃園 XPARK 水族館</li><li>島語自助餐饗宴 (with 筱涵)</li><li>大概 18:30 到家</li></ul>' },
+                { date: '11/14 (六)', content: '<ul><li>露營水與樹莊園（民宿、露營）</li></ul>' },
+                { date: '11/15 (日)', content: '<ul><li>露營水與樹莊園（民宿、露營）</li></ul>' },
+                { date: '11/16 (一)', content: '<ul><li><strong>三重區衛生所：</strong>成人健檢 (08:30~10:30攜帶健保卡)。已搬到三重安芯中心(先嗇宮站附近) / HIV預約專線: 29825233#9</li><li><strong>三重戶政事務所：</strong>辦實體自然人憑證</li><li><strong>佳仁診所：</strong>(菜寮站附近)</li><li><strong>三重區公所：</strong>用自然人憑證 (菜寮站附近)</li></ul>' },
+                { date: '11/17 (二)', content: '<ul><li>禾峰診所</li><li>蘆洲監理站</li></ul>' },
+                { date: '11/18 (三)', content: '<span class="empty-day">無特定行程</span>' },
+                { date: '11/19 (四)', content: '<ul><li><strong>寶可夢列車</strong> <a href="https://trctrack.com/train/2013?date=2026-11-19&from=pokemon" target="_blank">時刻表</a></li><li>松山 11:10 ➔ 臺北 11:20 ➔ 板橋 11:30 ➔ 樹林 11:37 ➔ 鶯歌 11:46 轉三鶯線</li></ul>' },
+                { date: '11/20 (五)', content: '<ul><li><strong>白天：</strong>中華郵政寶可夢郵票開賣。去世界郵票展或是郵局搶購卡丘</li><li><strong>晚上：</strong>去新營</li></ul>' },
+                { date: '11/21 (六)', content: '<ul><li>新營 ➔ 神農街（台南總店）➔ 慶中街郭綠豆湯</li><li>四草綠色隧道 ➔ 奇美博物館 ➔ 嘉義故宮南院</li></ul>' },
+                { date: '11/22 (日)', content: '<ul><li>新營 ➔ 台中 ➔ 三重</li></ul>' },
+                { date: '11/23 (一)', content: '<ul><li>Beams Japan 大稻埕 pop-up store</li></ul>' },
+                { date: '11/24 (二)', content: '<span class="empty-day">無特定行程</span>' },
+                { date: '11/25 (三)', content: '<span class="empty-day">無特定行程</span>' },
+                { date: '11/26 (四)', content: '<span class="empty-day">無特定行程</span>' },
+                { date: '11/27 (五)', content: '<span class="empty-day">無特定行程</span>' },
+                { date: '11/28 (六)', content: '<ul><li><strong>9合1大選</strong> (投票時間：上午 8 時至下午 4 時)</li></ul>' },
+                { date: '11/29 (日)', content: '<span class="empty-day">無特定行程</span>' },
+                { date: '11/30 (一)', content: '<span class="empty-day">無特定行程</span>' },
+                { date: '12/01 (二)', content: '<span class="empty-day">無特定行程</span>' },
+                { date: '12/02 (三)', content: '<ul><li><strong>16:25</strong> 台北(桃園)出發 ➔ <strong>19:55</strong> 抵達福岡</li></ul>' }
+            ],
+            'todo': [
+                { text: '預約看醫生(牙醫(牙周病檢查)、泌尿科/腎臟科-健康檢查、皮膚科)', checked: false },
+                { text: '銀行(台新證券額度調整)', checked: false },
+                { text: '機車行照更新', checked: false },
+                { text: '麗霞縫卡丘飲料袋、修改牛仔褲褲長', checked: false },
+                { text: '自然人憑證過期重辦實體卡(查健康存摺用)', checked: false }
+            ],
+            'buy': [
+                { text: '茶葉(綠紅茶)、咖啡豆', checked: false },
+                { text: '鮮味炒手、小磨坊', checked: false },
+                { text: '牛頭牌紅蔥醬、牛頭牌咖喱醬', checked: false },
+                { text: '維力炸醬', checked: false },
+                { text: 'Bioré 淨嫩沐浴乳 日月潭紅玉香 清爽型', checked: false },
+                { text: 'Bioré 淨嫩沐浴乳 台灣高山茶香 清爽型', checked: false },
+                { text: '中華電信計日30日無限流量 899元', checked: false }
+            ],
+            'spots': [
+                { text: '大巨蛋、Garden city', checked: false },
+                { text: '淡江大橋', checked: false },
+                { text: '奉天宮站、四獸山', checked: false },
+                { text: '行天宮，義天宮，聖祐宮', checked: false },
+                { text: '九份 (搭捷運到北門/西門站，換乘965公車直達)', checked: false },
+                { text: '京鼎樓(靠近晶華酒店)', checked: false },
+                { text: '貳樓', checked: false },
+                { text: '故宮+士林官邸+士林夜市+石二鍋士林中正店寶可夢內裝', checked: false },
+                { text: '陽明山(芒草)', checked: false },
+                { text: '長春四面佛', checked: false }
+            ]
+        };
+
+        // --- 核心資料存取邏輯 ---
+        function loadData(category) {
+            const saved = localStorage.getItem(`taiwan_${category}`);
+            let data;
+            
+            if (saved) {
+                data = JSON.parse(saved);
+                if (category !== 'itinerary' && data.length > 0 && typeof data[0] === 'string') {
+                    data = data.map(itemText => ({ text: itemText, checked: false }));
+                    saveData(category, data);
+                }
+            } else {
+                data = defaultData[category];
+                saveData(category, data);
+            }
+            return data;
+        }
+
+        function saveData(category, data) {
+            localStorage.setItem(`taiwan_${category}`, JSON.stringify(data));
+        }
+
+        // --- 每日行程 (Itinerary) 直接網頁編輯邏輯 ---
+        function renderItinerary() {
+            const container = document.getElementById('itinerary-container');
+            const data = loadData('itinerary');
+            container.innerHTML = '';
+
+            data.forEach((item, index) => {
+                const details = document.createElement('details');
+                details.open = true; // 預設全部展開
+                
+                const summary = document.createElement('summary');
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'summary-title';
+                titleSpan.textContent = item.date;
+
+                const actionDiv = document.createElement('div');
+                actionDiv.className = 'action-btns';
+                
+                // 修改按鈕切換編輯模式
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-edit';
+                editBtn.id = `edit-btn-${index}`;
+                editBtn.textContent = '修改行程';
+                editBtn.onclick = (e) => {
+                    e.preventDefault(); 
+                    toggleEditItinerary(index);
+                };
+
+                actionDiv.appendChild(editBtn);
+                summary.appendChild(titleSpan);
+                summary.appendChild(actionDiv);
+
+                // 行程內容區塊 (做為可編輯區域)
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'day-content';
+                contentDiv.id = `day-content-${index}`;
+                contentDiv.innerHTML = item.content; 
+
+                details.appendChild(summary);
+                details.appendChild(contentDiv);
+                container.appendChild(details);
+            });
+        }
+
+        // 切換編輯與儲存狀態
+        function toggleEditItinerary(index) {
+            const contentDiv = document.getElementById(`day-content-${index}`);
+            const btn = document.getElementById(`edit-btn-${index}`);
+            
+            if (contentDiv.isContentEditable) {
+                // 1. 執行儲存
+                contentDiv.contentEditable = "false";
+                contentDiv.classList.remove('editable-active');
+                btn.textContent = '修改行程';
+                btn.className = 'btn-edit';
+                
+                // 如果內容被清空，補回「無特定行程」的預設文字
+                let newContent = contentDiv.innerHTML.trim();
+                if (newContent === '' || newContent === '<ul><li><br></li></ul>' || newContent === '<ul><li></li></ul>') {
+                    newContent = '<span class="empty-day">無特定行程</span>';
+                    contentDiv.innerHTML = newContent;
+                }
+                
+                const data = loadData('itinerary');
+                data[index].content = newContent;
+                saveData('itinerary', data);
+            } else {
+                // 2. 進入編輯模式
+                contentDiv.contentEditable = "true";
+                contentDiv.classList.add('editable-active');
+                btn.textContent = '💾 儲存完成';
+                btn.className = 'btn-save';
+                
+                // 如果原本是空的，直接給他一個乾淨的項目符號，方便直接打字
+                if (contentDiv.innerHTML.includes('empty-day')) {
+                    contentDiv.innerHTML = '<ul><li></li></ul>';
+                }
+                contentDiv.focus();
+            }
+        }
+
+        // --- 清單 (Lists) 渲染與操作 ---
+        function renderList(category) {
+            const listElement = document.getElementById(`${category}-list`);
+            const data = loadData(category);
+            listElement.innerHTML = '';
+
+            data.forEach((item, index) => {
+                const li = document.createElement('li');
+                
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'item-left';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'item-checkbox';
+                checkbox.checked = item.checked;
+                checkbox.onchange = () => toggleCheck(category, index);
+
+                const span = document.createElement('span');
+                span.className = 'item-text' + (item.checked ? ' checked-text' : '');
+                span.textContent = item.text;
+
+                leftDiv.appendChild(checkbox);
+                leftDiv.appendChild(span);
+
+                const actionDiv = document.createElement('div');
+                actionDiv.className = 'action-btns';
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-edit';
+                editBtn.textContent = '修改';
+                editBtn.onclick = () => editListItem(category, index);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-delete';
+                deleteBtn.textContent = '刪除';
+                deleteBtn.onclick = () => deleteListItem(category, index);
+
+                actionDiv.appendChild(editBtn);
+                actionDiv.appendChild(deleteBtn);
+
+                li.appendChild(leftDiv);
+                li.appendChild(actionDiv);
+                listElement.appendChild(li);
+            });
+        }
+
+        function addItem(category) {
+            const inputElement = document.getElementById(`${category}-input`);
+            const newText = inputElement.value.trim();
+            if (newText) {
+                const data = loadData(category);
+                data.push({ text: newText, checked: false });
+                saveData(category, data);
+                inputElement.value = '';
+                renderList(category);
+            }
+        }
+
+        function editListItem(category, index) {
+            const data = loadData(category);
+            const newText = prompt('請輸入修改後的內容：', data[index].text);
+            if (newText !== null && newText.trim() !== '') {
+                data[index].text = newText.trim();
+                saveData(category, data);
+                renderList(category);
+            }
+        }
+
+        function deleteListItem(category, index) {
+            if (confirm('確定要刪除這個項目嗎？')) {
+                const data = loadData(category);
+                data.splice(index, 1);
+                saveData(category, data);
+                renderList(category);
+            }
+        }
+
+        function toggleCheck(category, index) {
+            const data = loadData(category);
+            data[index].checked = !data[index].checked;
+            saveData(category, data);
+            renderList(category);
+        }
+
+        // 支援 Enter 鍵新增
+        ['todo', 'buy', 'spots'].forEach(category => {
+            document.getElementById(`${category}-input`).addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addItem(category);
+                }
+            });
+        });
+
+        // --- 頁面載入時初始化渲染 ---
+        window.onload = () => {
+            renderItinerary();
+            renderList('todo');
+            renderList('buy');
+            renderList('spots');
+        };
+    </script>
+</body>
+</html>
